@@ -1,4 +1,6 @@
 #include <iostream>
+#include <fstream>
+#include <vector>
 
 #include "rtweekend.h"
 #include "color.h"
@@ -7,6 +9,20 @@
 #include "camera.h"
 
 /* posso adicionar um sleep quando acerta a esfera pra mostrar a distribuiçao de carga */
+
+void write_image(std::vector<color> matrix, int width, int height) {
+
+  std::ofstream out("output.ppm");
+  out << "P3\n" << width << " " << height << "\n255\n";
+
+  std::vector<color>::iterator iter = matrix.begin();
+
+  for (iter; iter < matrix.end(); iter++) {
+    out << (*iter).x() << " " << (*iter).y() << " " << (*iter).z() << "\n";
+  }
+
+  out.close();
+}
 
 color ray_color(const ray& r, const hittable& world, int depth) {
 
@@ -57,6 +73,7 @@ int main() {
   const int image_height = static_cast<int>(image_width / aspect_ratio);
   const int samples_per_pixel = 100;
   const int max_depth = 50;
+  auto matrix = std::vector<color>(image_width * image_height);
 
   // world
   hittable_list world;
@@ -67,8 +84,6 @@ int main() {
   camera cam;
   
   // render
-  std::cout << "P3\n" << image_width << " " << image_height << "\n255\n";
-
   for (int j = image_height - 1; j >= 0; j--) {
     std::cerr << "\rScanlines remaining: " << j << std::flush;
     for (int i = 0; i < image_width; i++) {
@@ -82,9 +97,11 @@ int main() {
 	ray r = cam.get_ray(u, v);
 	pixel_color += ray_color(r, world, max_depth);
       }      
-      write_color(std::cout, pixel_color, samples_per_pixel);
+      matrix[(image_height-j)*image_width + i] = correct_color(pixel_color, samples_per_pixel);
     }
   }
 
   std::cerr << "\nDone\n";
+
+  write_image(matrix, image_width, image_height);
 }
