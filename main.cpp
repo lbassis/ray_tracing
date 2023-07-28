@@ -2,14 +2,13 @@
 #include <fstream>
 #include <vector>
 #include <pthread.h>
+#include <unistd.h>
 
 #include "rtweekend.h"
 #include "color.h"
 #include "hittable_list.h"
 #include "sphere.h"
 #include "camera.h"
-
-std::vector<color> matrix;
 
 color ray_color(const ray& r, const hittable& world, int depth);
 
@@ -38,10 +37,11 @@ void* process_pixel(void *arg) {
     pixel_color += ray_color(r, info.world, info.max_depth);
   }
 
-  matrix[(info.height-info.j)*info.width + info.i] = correct_color(pixel_color, info.samples);
+  auto pixel = new color();
+  *pixel = correct_color(pixel_color, info.samples);
   
   free((ray_info*) arg);
-  return NULL;
+  return (void*)(pixel);
 }
 
 void write_image(std::vector<color> matrix, int width, int height) {
@@ -103,12 +103,12 @@ int main() {
 
   // image
   const auto aspect_ratio = 16.0/9.0;
-  const int image_width = 400;
+  const int image_width = 200;
   const int image_height = static_cast<int>(image_width / aspect_ratio);
   const int samples_per_pixel = 100;
   const int max_depth = 50;
 
-  matrix = std::vector<color>(image_width * image_height);
+  auto matrix = std::vector<color>(image_width * image_height);
 
   // world
   hittable_list world;
@@ -119,6 +119,7 @@ int main() {
   camera cam;
   
   // render
+  auto tids = std::vector<pthread_t>(image_height * image_width);
   for (int j = image_height - 1; j >= 0; j--) {
     for (int i = 0; i < image_width; i++) {
 
@@ -126,7 +127,19 @@ int main() {
       ray_info *arg = (ray_info*) malloc(sizeof(struct ray_info));
 
       *arg = {i, j, samples_per_pixel, image_width, image_height, cam, world, max_depth};
-      pthread_create(&tid, NULL, &process_pixel, (void*)arg);             
+      pthread_create(&tid, NULL, &process_pixel, (void*)arg);
+      tids[j*image_width+i] = tid;
+    }
+  }
+
+  std::vector<pthread_t>::iterator iter = tids.begin();
+  
+  for (int j = image_height - 1; j >= 0; j--) {
+    for (int i = 0; i < image_width; i++) {
+
+      void *ret;
+      pthread_join(tids[j*image_width+i], &ret);
+      matrix[(image_height-j-1)*image_width+i] = *(color*)ret;
     }
   }
 
