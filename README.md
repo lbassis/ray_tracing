@@ -1,1 +1,1 @@
-Attempt to construct a Ray-Tracing algorithm based on Scratchapixel's one. Original notes and algorithm available at https://www.scratchapixel.com/index.php
+Attempt to construct a Ray-Tracing algorithm based on Scratchapixel's one. Original notes and algorithm available at https://raytracing.github.io/books/RayTracingInOneWeekend.html
