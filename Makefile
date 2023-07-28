@@ -1,5 +1,5 @@
 all:
-	g++ -pg main.cpp -o ray
+	g++ -pg -pthread main.cpp -o ray
 
 clean:
 	rm ./ray
