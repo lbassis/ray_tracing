@@ -16,7 +16,11 @@ color ray_color(const ray& r, const hittable& world, int depth) {
 
   /* using 0.001 to avoid shadow acne */
   if (world.hit(r, 0.001, infinity, rec)) {
-    point3 target = rec.p + rec.normal + random_in_unit_sphere();
+    /* simple diffusion method */
+    /* point3 target = rec.p + rec.normal + random_in_unit_sphere(); */
+
+    /* true lambertian method */
+    point3 target = rec.p + rec.normal + random_unit_vector();
     return 0.5 * ray_color(ray(rec.p, target - rec.p), world, depth-1);
   }
   

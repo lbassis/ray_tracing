@@ -118,4 +118,10 @@ vec3 random_in_unit_sphere() {
   }
 }
 
+/* alternative diffusion method (True Lambertian) which picks points on the surface of 
+ * the unit sphere */
+vec3 random_unit_vector() {
+  return unit_vector(random_in_unit_sphere());
+}
+
 #endif
