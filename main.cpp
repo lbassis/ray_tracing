@@ -13,8 +13,9 @@ color ray_color(const ray& r, const hittable& world, int depth) {
   hit_record rec;
 
   if (depth <= 0) return color(0, 0, 0);
-  
-  if (world.hit(r, 0, infinity, rec)) {
+
+  /* using 0.001 to avoid shadow acne */
+  if (world.hit(r, 0.001, infinity, rec)) {
     point3 target = rec.p + rec.normal + random_in_unit_sphere();
     return 0.5 * ray_color(ray(rec.p, target - rec.p), world, depth-1);
   }
@@ -46,7 +47,7 @@ int main() {
   const auto aspect_ratio = 16.0/9.0;
   const int image_width = 400;
   const int image_height = static_cast<int>(image_width / aspect_ratio);
-  const int samples_per_pixel = 1;
+  const int samples_per_pixel = 100;
   const int max_depth = 50;
 
   // world
