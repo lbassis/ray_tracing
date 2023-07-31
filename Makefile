@@ -1,8 +1,8 @@
 all:
-	g++ main.cpp -o ray
+	g++ -pthread main.cpp -o ray
 
 prof:
-	g++ -pg main.cpp -o ray
+	g++ -pthread -pg main.cpp -o ray
 
 clean:
 	rm ./ray

@@ -1,15 +1,51 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <pthread.h>
+#include <unistd.h>
 
 #include "rtweekend.h"
 #include "color.h"
 #include "hittable_list.h"
 #include "sphere.h"
 #include "camera.h"
-#include <chrono>
 
+#include <chrono>
 using namespace std::chrono;
+
+color ray_color(const ray& r, const hittable& world, int depth);
+
+struct ray_info {
+  int i;
+  int j;
+  int samples;
+  int width;
+  int height;
+  camera cam;
+  hittable_list world;
+  int max_depth;
+};
+  
+void* process_pixel(void *arg) {
+
+  ray_info info = *((ray_info*)arg);
+
+  color pixel_color(0, 0, 0);
+
+  for (int s = 0; s < info.samples; s++) {
+    auto u = (info.i + random_double()) / (info.width-1);
+    auto v = (info.j + random_double()) / (info.height-1);
+    
+    ray r = info.cam.get_ray(u, v);
+    pixel_color += ray_color(r, info.world, info.max_depth);
+  }
+
+  auto pixel = new color();
+  *pixel = correct_color(pixel_color, info.samples);
+  
+  free((ray_info*) arg);
+  return (void*)(pixel);
+}
 
 void write_image(std::vector<color> matrix, int width, int height) {
 
@@ -69,13 +105,14 @@ color ray_normal_color(const ray& r, const hittable& world) {
 int main() {
 
   auto start = high_resolution_clock::now();
-
+  
   // image
   const auto aspect_ratio = 16.0/9.0;
   const int image_width = 200;
   const int image_height = static_cast<int>(image_width / aspect_ratio);
   const int samples_per_pixel = 100;
   const int max_depth = 50;
+
   auto matrix = std::vector<color>(image_width * image_height);
 
   // world
@@ -87,19 +124,27 @@ int main() {
   camera cam;
   
   // render
+  auto tids = std::vector<pthread_t>(image_height * image_width);
   for (int j = image_height - 1; j >= 0; j--) {
     for (int i = 0; i < image_width; i++) {
 
-      color pixel_color(0, 0, 0);
-      /* we will have 100 samples per pixel and use their average to calculate the color -> antialias*/
-      for (int s = 0; s < samples_per_pixel; s++) {
-	auto u = (i + random_double()) / (image_width-1);
-	auto v = (j + random_double()) / (image_height-1);
+      pthread_t tid;
+      ray_info *arg = (ray_info*) malloc(sizeof(struct ray_info));
 
-	ray r = cam.get_ray(u, v);
-	pixel_color += ray_color(r, world, max_depth);
-      }      
-      matrix[(image_height-j)*image_width + i] = correct_color(pixel_color, samples_per_pixel);
+      *arg = {i, j, samples_per_pixel, image_width, image_height, cam, world, max_depth};
+      pthread_create(&tid, NULL, &process_pixel, (void*)arg);
+      tids[j*image_width+i] = tid;
+    }
+  }
+
+  std::vector<pthread_t>::iterator iter = tids.begin();
+  
+  for (int j = image_height - 1; j >= 0; j--) {
+    for (int i = 0; i < image_width; i++) {
+
+      void *ret;
+      pthread_join(tids[j*image_width+i], &ret);
+      matrix[(image_height-j-1)*image_width+i] = *(color*)ret;
     }
   }
 
@@ -107,6 +152,6 @@ int main() {
 
   auto stop = high_resolution_clock::now();
   auto duration = duration_cast<milliseconds>(stop - start);
- 
+
   std::cout << "Duração: " << duration.count() << " milisegundos" << std::endl;
 }
