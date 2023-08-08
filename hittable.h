@@ -3,9 +3,12 @@
 
 #include "ray.h"
 
-struct hit_record {
+class material;
+
+struct hit_record{
   point3 p;
   vec3 normal;
+  shared_ptr<material> mat_ptr;
   double t;
   bool front_face;
 
@@ -13,8 +16,7 @@ struct hit_record {
     front_face = dot(r.direction(), outward_normal) < 0;
     normal = front_face ? outward_normal : -outward_normal;
   }
-  
-};
+}; 
 
 class hittable {
  public:

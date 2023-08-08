@@ -3,18 +3,7 @@
 
 #include "rtweekend.h"
 
-struct hit_record{
-  point3 p;
-  vec3 normal;
-  shared_ptr<material> mat_ptr;
-  double t;
-  bool front_face;
-
-  inline void set_face_normal(const ray& r, const vec3& outward_normal) {
-    front_face = dot(r.direction(), outward_normal) < 0;
-    normal = front_face ? outward_normal : -outward_normal;
-  }
-}; 
+#include "hittable_list.h"
 
 class material {
 public:
@@ -38,6 +27,21 @@ public:
     attenuation = albedo;
     return true;
   }
-}
+};
+
+class metal : public material {
+public:
+  color albedo;
+
+  metal(const color& a) : albedo(a) {}
+  
+  virtual bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const override {
+    vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
+    scattered = ray(rec.p, reflected);
+    attenuation = albedo;
+    
+    return (dot(scattered.direction(), rec.normal) > 0);
+  }
+};
 
 #endif
