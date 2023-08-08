@@ -6,8 +6,6 @@
 #include "sphere.h"
 #include "camera.h"
 
-/* posso adicionar um sleep quando acerta a esfera pra mostrar a distribuiçao de carga */
-
 color ray_color(const ray& r, const hittable& world, int depth) {
 
   hit_record rec;
