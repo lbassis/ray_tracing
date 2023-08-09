@@ -72,7 +72,9 @@ int main() {
   point3 lookfrom(-2, 2, 1);
   point3 lookat(0, 0, -1);
   vec3 vup(0, 1, 0);
-  camera cam(lookfrom, lookat, vup, 90, aspect_ratio);
+  auto dist_to_focus = (lookfrom - lookat).length();
+  auto aperture = 0.1;
+  camera cam(lookfrom, lookat, vup, 90, aspect_ratio, aperture, dist_to_focus);
   
   // render
   std::cout << "P3\n" << image_width << " " << image_height << "\n255\n";
